@@ -14,12 +14,12 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Build Docker Image
-      run: docker build -t simpleci .  
+      run: docker build -t simple .  
 
     - name: Login to Docker Hub
       run: |
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-        docker tag simpleci "${{ secrets.DOCKER_USERNAME }}/simpleci:latest"
+        docker tag simple "${{ secrets.DOCKER_USERNAME }}/simple:latest"
         docker push "${{ secrets.DOCKER_USERNAME }}/simpleci:latest
 
 
