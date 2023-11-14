@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Docker Build and Deploy
 
 on:
   push:
@@ -6,30 +6,32 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Build Docker Image
-      run: docker build -t simple .  
+    - name: Set up Docker
+      uses: docker/setup-docker@v2
+      with:
+        dockerfile: Dockerfile
+        context: .
 
-    - name: Login to Docker Hub
+    - name: Build Docker image
+      run: docker build -t your-docker-image:latest .
+
+    - name: Push Docker image to registry (optional)
       run: |
-        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-        docker tag simple "${{ secrets.DOCKER_USERNAME }}/simple:latest"
-        docker push "${{ secrets.DOCKER_USERNAME }}/simple:latest
-
+        echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+        docker push your-docker-image:latest
 
     - name: Deploy to EC2
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_PRIVATE_KEY }}
-        script: |
-          # Commands to set up your environment on EC2 and deploy the Docker image
-          ssh -o StrictHostKeyChecking=no -i /path/to/private/key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'docker pull your-docker-image-name'
-          ssh -o StrictHostKeyChecking=no -i /path/to/private/key.pem ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} 'docker run -d -p 80:80 your-docker-image-name'
+      run: |
+        ssh -i ${{ secrets.SSH_PRIVATE_KEY_PATH }} ubuntu@your-ec2-public-ip 'bash -s' << 'ENDSSH'
+          docker pull your-docker-image:latest
+          docker stop your-container-name || true
+          docker rm your-container-name || true
+          docker run -d -p 80:80 --name your-container-name your-docker-image:latest
+        ENDSSH
