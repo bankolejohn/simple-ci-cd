@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building the application...'
+                // Add your build commands here
+            }
+        }
+
+        stage('test') {
+            steps {
+                echo 'testing the application'
+            }
+        }
+
+        stage('deploy') {
+            steps {
+                script {
+                    echo "deploying the application on EC2"
+                    def dockerCmd = 'docker run -d -p 3080:3080 bankolejohn/demo-app:jma-1.0'
+                    sshagent(['ec2-key']) {
+                        sh "ssh -o StrictHostKeyChecking=no ubuntu@34.228.254.214 ${dockerCmd}"
+                    }
+                }
+                
+
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Build successful!'
+            // Additional actions on success
+        }
+        failure {
+            echo 'Build failed!'
+            // Additional actions on failure
+        }
+    }
+}
